@@ -1,0 +1,25 @@
+[
+  {
+    "email": "john.doe@example.com",
+    "password": "password123",
+    "name": "John Doe",
+    "education": "Bachelor's",
+    "skills": "Product Management, Python, SQL, Data Analysis, Agile, JIRA",
+    "location": "Bangalore",
+    "experience_years": 0,
+    "phone": "9876543210",
+    "linkedin": "linkedin.com/in/johndoe",
+    "github": "github.com/johndoe"
+  },
+  {
+    "email": "jane.smith@example.com",
+    "password": "password123",
+    "name": "Jane Smith",
+    "education": "Master's",
+    "skills": "User Research, Figma, Analytics, A/B Testing, Product Strategy",
+    "location": "Mumbai",
+    "experience_years": 1,
+    "phone": "9876543211",
+    "linkedin": "linkedin.com/in/janesmith"
+  }
+]

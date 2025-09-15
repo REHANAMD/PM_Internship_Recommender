@@ -1,0 +1,21 @@
+# OS
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Local SQLite DB (don’t commit local data)
+recommendation_engine.db
+
+# Streamlit cache
+.streamlit/
+
+# Editors
+.vscode/
+.cursor/
+
+# Env files if any
+.env

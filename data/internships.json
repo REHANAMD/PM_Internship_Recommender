@@ -1,0 +1,98 @@
+[
+  {
+    "title": "Product Management Intern",
+    "company": "TechCorp India",
+    "location": "Bangalore",
+    "description": "Join our product team to help build innovative solutions for millions of users.",
+    "required_skills": "Product Management, User Research, Analytics, SQL, JIRA",
+    "preferred_skills": "A/B Testing, Figma, Python, Market Research",
+    "duration": "6 months",
+    "stipend": "25000",
+    "min_education": "Bachelor's",
+    "experience_required": 0
+  },
+  {
+    "title": "Associate Product Manager Intern",
+    "company": "StartupHub",
+    "location": "Mumbai",
+    "description": "Work directly with founders to shape product strategy and roadmap.",
+    "required_skills": "Product Strategy, Agile, User Stories, Competitive Analysis",
+    "preferred_skills": "Wireframing, SQL, Data Analysis, Stakeholder Management",
+    "duration": "3 months",
+    "stipend": "20000",
+    "min_education": "Bachelor's",
+    "experience_required": 0
+  },
+  {
+    "title": "Product Analyst Intern",
+    "company": "DataDriven Solutions",
+    "location": "Pune",
+    "description": "Analyze user behavior and product metrics to drive data-informed decisions.",
+    "required_skills": "Data Analysis, SQL, Excel, Analytics, Statistics",
+    "preferred_skills": "Python, Tableau, Product Management, A/B Testing",
+    "duration": "4 months",
+    "stipend": "18000",
+    "min_education": "Bachelor's",
+    "experience_required": 0
+  },
+  {
+    "title": "Technical Product Manager Intern",
+    "company": "CloudTech Systems",
+    "location": "Hyderabad",
+    "description": "Bridge the gap between engineering and business teams for cloud products.",
+    "required_skills": "Product Management, Technical Documentation, API, Cloud Computing",
+    "preferred_skills": "AWS, Python, Agile, System Design",
+    "duration": "6 months",
+    "stipend": "30000",
+    "min_education": "Bachelor's",
+    "experience_required": 0
+  },
+  {
+    "title": "Growth Product Manager Intern",
+    "company": "E-Commerce Giants",
+    "location": "Delhi",
+    "description": "Focus on user acquisition, retention, and growth metrics.",
+    "required_skills": "Growth Marketing, Analytics, A/B Testing, User Research",
+    "preferred_skills": "SQL, Python, SEO, Social Media Marketing",
+    "duration": "3 months",
+    "stipend": "22000",
+    "min_education": "Bachelor's",
+    "experience_required": 0
+  },
+  {
+    "title": "Product Design Intern",
+    "company": "DesignFirst Studio",
+    "location": "Remote",
+    "description": "Collaborate with product and design teams to create user-centered experiences.",
+    "required_skills": "Figma, User Research, Wireframing, Prototyping",
+    "preferred_skills": "Product Management, HTML, CSS, User Testing",
+    "duration": "4 months",
+    "stipend": "15000",
+    "min_education": "Bachelor's",
+    "experience_required": 0
+  },
+  {
+    "title": "Product Operations Intern",
+    "company": "FinTech Innovations",
+    "location": "Chennai",
+    "description": "Optimize product processes and support cross-functional teams.",
+    "required_skills": "Project Management, Process Optimization, Data Analysis, Communication",
+    "preferred_skills": "JIRA, Confluence, SQL, Product Management",
+    "duration": "5 months",
+    "stipend": "20000",
+    "min_education": "Bachelor's",
+    "experience_required": 0
+  },
+  {
+    "title": "Product Marketing Intern",
+    "company": "SaaS Dynamics",
+    "location": "Noida",
+    "description": "Develop go-to-market strategies and product positioning.",
+    "required_skills": "Marketing, Content Writing, Market Research, Communication",
+    "preferred_skills": "Product Management, Analytics, SEO, Social Media",
+    "duration": "3 months",
+    "stipend": "18000",
+    "min_education": "Bachelor's",
+    "experience_required": 0
+  }
+]
