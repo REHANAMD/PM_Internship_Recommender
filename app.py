@@ -295,6 +295,38 @@ def login_page():
         
         with tab2:
             st.markdown("#### Create Your Account")
+            
+            # Resume upload section at the top
+            st.markdown("##### 📄 Auto-fill with Resume (Optional)")
+            uploaded_file = st.file_uploader(
+                "Upload Resume to Auto-fill (PDF/DOC/DOCX)",
+                type=['pdf', 'docx', 'doc'],
+                help="Upload your resume to automatically fill the form below"
+            )
+            
+            if uploaded_file and st.button("🔍 Parse Resume & Auto-fill", type="primary"):
+                with st.spinner("Parsing your resume..."):
+                    files = {'file': (uploaded_file.name, uploaded_file, uploaded_file.type)}
+                    result = make_api_request("/parse_resume", method="POST", files=files)
+                    
+                    if result and result.get('success'):
+                        parsed_data = result['parsed_data']
+                        # Update session state with parsed data
+                        st.session_state.signup_name = parsed_data.get('name', '')
+                        st.session_state.signup_email = parsed_data.get('email', '')
+                        st.session_state.signup_education = parsed_data.get('education', '')
+                        st.session_state.signup_location = parsed_data.get('location', '')
+                        st.session_state.signup_phone = parsed_data.get('phone', '')
+                        st.session_state.signup_skills = parsed_data.get('skills', '')
+                        st.session_state.signup_linkedin = parsed_data.get('linkedin', '')
+                        st.session_state.signup_github = parsed_data.get('github', '')
+                        st.success("✅ Resume parsed successfully! Form has been auto-filled below.")
+                        st.rerun()
+                    else:
+                        st.error("❌ Failed to parse resume. Please try again or fill manually.")
+            
+            st.divider()
+            
             with st.form("signup_form"):
                 col1, col2 = st.columns(2)
                 
@@ -302,12 +334,6 @@ def login_page():
                     name = st.text_input("Full Name*", value=st.session_state.signup_name, placeholder="John Doe")
                     email = st.text_input("Email*", value=st.session_state.signup_email, placeholder="your@email.com")
                     password = st.text_input("Password*", type="password", help="Minimum 6 characters")
-                    # Resume upload for auto-fill
-                    uploaded_file = st.file_uploader(
-                        "Upload Resume to Auto-fill (PDF/DOC/DOCX)",
-                        type=['pdf', 'docx', 'doc'],
-                        help="Optional: We'll prefill details from your resume"
-                    )
                 
                 with col2:
                     education = st.selectbox(
@@ -334,35 +360,6 @@ def login_page():
                 with col2:
                     github = st.text_input("GitHub Profile (optional)", value=st.session_state.signup_github, placeholder="github.com/yourprofile")
                 
-                # Auto-fill button
-                autofill_col1, autofill_col2 = st.columns([1, 1])
-                with autofill_col1:
-                    if st.form_submit_button("🔎 Auto-fill from Resume"):
-                        if uploaded_file is not None:
-                            with st.spinner("Parsing resume..."):
-                                files = {'file': (uploaded_file.name, uploaded_file, uploaded_file.type)}
-                                result = make_api_request(
-                                    "/parse_resume",
-                                    method="POST",
-                                    files=files
-                                )
-                                if result and result.get('success'):
-                                    parsed = result['parsed_data']
-                                    # Persist into session state so inputs reflect values
-                                    st.session_state.signup_name = parsed.get('name', st.session_state.signup_name)
-                                    st.session_state.signup_education = parsed.get('education', st.session_state.signup_education)
-                                    st.session_state.signup_location = parsed.get('location', st.session_state.signup_location)
-                                    st.session_state.signup_phone = parsed.get('phone', st.session_state.signup_phone)
-                                    st.session_state.signup_skills = parsed.get('skills', st.session_state.signup_skills)
-                                    st.session_state.signup_email = parsed.get('email', st.session_state.signup_email)
-                                    st.session_state.signup_linkedin = parsed.get('linkedin', st.session_state.signup_linkedin)
-                                    st.session_state.signup_github = parsed.get('github', st.session_state.signup_github)
-                                    st.success("Form auto-filled from resume. Please review before submitting.")
-                                    st.rerun()
-                                else:
-                                    st.warning("Could not parse the resume. Please fill manually.")
-                        else:
-                            st.info("Please upload a resume to auto-fill.")
 
                 if st.form_submit_button("Sign Up", type="primary"):
                     if name and email and password:
@@ -475,6 +472,15 @@ def dashboard_page():
                 st.session_state.user = None
                 st.session_state.page = 'login'
                 st.session_state.recommendations = None
+                # Clear all signup form fields
+                st.session_state.signup_name = ''
+                st.session_state.signup_education = ''
+                st.session_state.signup_location = ''
+                st.session_state.signup_phone = ''
+                st.session_state.signup_skills = ''
+                st.session_state.signup_email = ''
+                st.session_state.signup_linkedin = ''
+                st.session_state.signup_github = ''
                 st.rerun()
     
     # Main content area

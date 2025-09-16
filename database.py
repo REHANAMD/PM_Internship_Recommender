@@ -72,6 +72,14 @@ class Database:
                 experience_required INTEGER DEFAULT 0
             )
         ''')
+        # Add unique index to prevent exact duplicates by title + company + location
+        try:
+            cursor.execute('''
+                CREATE UNIQUE INDEX IF NOT EXISTS idx_internships_unique
+                ON internships(title, company, location, description)
+            ''')
+        except Exception:
+            pass
         
         # Create applications table for tracking
         cursor.execute('''
@@ -115,6 +123,10 @@ class Database:
         
         conn.commit()
         conn.close()
+        
+        # Run cleanup and migration after table creation
+        self.run_cleanup_and_migration()
+        
         logger.info("Database initialized successfully")
     
     def ensure_all_tables(self) -> List[str]:
@@ -215,9 +227,17 @@ class Database:
                 conn = self.get_connection()
                 cursor = conn.cursor()
                 
+                # Skip seeding if internships already exist
+                cursor.execute('SELECT COUNT(*) FROM internships')
+                count_before = cursor.fetchone()[0]
+                if count_before > 0:
+                    conn.close()
+                    logger.info("Internships already present, skipping seeding")
+                    return True
+
                 for internship in internships:
                     cursor.execute('''
-                        INSERT OR REPLACE INTO internships 
+                        INSERT OR IGNORE INTO internships 
                         (title, company, location, description, required_skills, 
                          preferred_skills, duration, stipend, min_education, experience_required)
                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -527,13 +547,13 @@ class Database:
         return count > 0
 
     def remove_duplicate_internships(self) -> int:
-        """Remove duplicate internships by title+company, keeping the first occurrence. Returns number removed."""
+        """Remove duplicate internships by title+company+location+description, keeping the first occurrence. Returns number removed."""
         conn = self.get_connection()
         cursor = conn.cursor()
         cursor.execute('''
-            SELECT title, company, COUNT(*) as cnt
+            SELECT title, company, location, description, COUNT(*) as cnt
             FROM internships
-            GROUP BY title, company
+            GROUP BY title, company, location, description
             HAVING COUNT(*) > 1
         ''')
         duplicates = cursor.fetchall()
@@ -542,13 +562,14 @@ class Database:
             conn.close()
             return 0
         removed = 0
-        for title, company, cnt in duplicates:
+        for title, company, location, description, cnt in duplicates:
             cursor.execute('''
                 DELETE FROM internships
                 WHERE rowid NOT IN (
-                    SELECT MIN(rowid) FROM internships WHERE title = ? AND company = ?
-                ) AND title = ? AND company = ?
-            ''', (title, company, title, company))
+                    SELECT MIN(rowid) FROM internships 
+                    WHERE title = ? AND company = ? AND location = ? AND description = ?
+                ) AND title = ? AND company = ? AND location = ? AND description = ?
+            ''', (title, company, location, description, title, company, location, description))
             removed += cnt - 1
         conn.commit()
         conn.close()
@@ -585,6 +606,22 @@ class Database:
         stats['duplicate_groups'] = cursor.fetchone()[0]
         conn.close()
         return stats
+
+    def run_cleanup_and_migration(self):
+        """Run cleanup and migration tasks automatically"""
+        try:
+            # Remove duplicates based on title + company + location + description
+            removed = self.remove_duplicate_internships()
+            if removed > 0:
+                logger.info(f"Cleaned up {removed} duplicate internships")
+            
+            # Ensure all tables exist (migration)
+            missing = self.ensure_all_tables()
+            if missing:
+                logger.info(f"Created missing tables: {missing}")
+                
+        except Exception as e:
+            logger.error(f"Error during cleanup/migration: {e}")
 
 # Initialize database on module import
 if __name__ == "__main__":

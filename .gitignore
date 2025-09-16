@@ -1,21 +1,16 @@
-# OS
-.DS_Store
-
-# Python
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
-
-# Local SQLite DB (don’t commit local data)
-recommendation_engine.db
-
-# Streamlit cache
-.streamlit/
-
-# Editors
+*.py[cod]
+*.egg-info/
+.venv/
+.venv*/
+venv/
+ENV/
+.DS_Store
+*.db
+*.db-*
+*.log
 .vscode/
-.cursor/
-
-# Env files if any
-.env
+.idea/
+.streamlit/
+build/
+dist/

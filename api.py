@@ -601,10 +601,14 @@ async def health_check():
 if __name__ == "__main__":
     import uvicorn
     
-    # Initialize database and seed data
+    # Initialize database and seed data once if empty
     db.init_db()
     Utils.create_sample_files()
-    db.seed_internships("data/internships.json")
+    try:
+        # Seed only when table is empty
+        db.seed_internships("data/internships.json")
+    except Exception:
+        pass
     
     # Run server
     uvicorn.run(
