@@ -286,11 +286,15 @@ async def update_profile(
         success = db.update_candidate(current_user['id'], update_data)
         
         if success:
+            # Clear cached recommendations for this candidate since profile changed
+            db.clear_recommendations_for_candidate(current_user['id'])
+            logger.info(f"Cleared recommendations for candidate {current_user['id']} after profile update")
+            
             # Get updated profile
             updated_user = db.get_candidate(candidate_id=current_user['id'])
             return {
                 "success": True,
-                "message": "Profile updated successfully",
+                "message": "Profile updated successfully. Recommendations will be recalculated.",
                 "profile": {
                     k: v for k, v in updated_user.items() 
                     if k != 'password_hash'

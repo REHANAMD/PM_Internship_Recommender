@@ -512,6 +512,8 @@ def dashboard_page():
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
             st.info("👆 Click 'Get Recommendations' in the sidebar to see your personalized internship matches!")
+            if st.session_state.get('profile_updated', False):
+                st.success("✨ Your profile was recently updated! Get fresh recommendations based on your new information.")
 
 def profile_page():
     """Profile update page with resume upload"""
@@ -658,9 +660,13 @@ def profile_page():
                         # Update session state with the new profile data
                         st.session_state.user = result['profile']
                         st.session_state.profile_data = result['profile']
+                        # Clear recommendations since profile changed
+                        st.session_state.recommendations = []
+                        # Set flag to show profile update message
+                        st.session_state.profile_updated = True
                         # Increment form counter to clear and reinitialize widgets next run
                         st.session_state.form_counter = st.session_state.get('form_counter', 0) + 1
-                        st.success("Profile updated successfully!")
+                        st.success("Profile updated successfully! Recommendations will be recalculated.")
                         # Clear the form by rerunning
                         st.rerun()
                     else:
@@ -697,6 +703,8 @@ def fetch_recommendations():
         
         if result and result.get('success'):
             st.session_state.recommendations = result['recommendations']
+            # Clear profile update flag since we have fresh recommendations
+            st.session_state.profile_updated = False
             st.success(f"Found {len(result['recommendations'])} great matches for you!")
             st.rerun()
 

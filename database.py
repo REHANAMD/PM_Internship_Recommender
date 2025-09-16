@@ -459,6 +459,20 @@ class Database:
         conn.close()
         logger.info(f"Cleared recommendations older than {days} days")
     
+    def clear_recommendations_for_candidate(self, candidate_id: int):
+        """Clear all cached recommendations for a specific candidate"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            DELETE FROM recommendations 
+            WHERE candidate_id = ?
+        ''', (candidate_id,))
+        
+        conn.commit()
+        conn.close()
+        logger.info(f"Cleared all recommendations for candidate {candidate_id}")
+    
     def save_internship(self, candidate_id: int, internship_id: int) -> bool:
         """Save an internship to user's saved list"""
         conn = self.get_connection()

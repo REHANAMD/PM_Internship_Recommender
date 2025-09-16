@@ -97,10 +97,16 @@ class RecommendationEngine:
         
         normalized = skills_text.lower()
         
-        # Replace synonyms and abbreviations
-        for abbr, full in self.skill_synonyms.items():
+        # Replace synonyms and abbreviations (sort by length descending to avoid partial replacements)
+        sorted_synonyms = sorted(self.skill_synonyms.items(), key=lambda x: len(x[0]), reverse=True)
+        for abbr, full in sorted_synonyms:
+            # Use word boundaries and avoid replacing within already replaced text
             pattern = r'\b' + re.escape(abbr) + r'\b'
             normalized = re.sub(pattern, full, normalized)
+        
+        # Clean up any double replacements
+        normalized = re.sub(r'\.javascript\.javascript', '.javascript', normalized)
+        normalized = re.sub(r'\.js\.js', '.js', normalized)
         
         return normalized
     
@@ -147,6 +153,49 @@ class RecommendationEngine:
             required_score = len(required_matches) / len(required_set)
             preferred_score = len(preferred_matches) / len(preferred_set) if preferred_set else 0
             base_score = (required_score * 0.7) + (preferred_score * 0.3)
+        
+        # IMPROVEMENT: Add skill category matching for better recognition
+        skill_categories = {
+            'technical': {'python', 'java', 'javascript', 'typescript', 'html', 'css', 'react', 'node.js', 'express', 
+                         'sql', 'postgresql', 'mongodb', 'git', 'github', 'machine learning', 'pandas', 'numpy', 'ai'},
+            'data_analysis': {'sql', 'data analysis', 'analytics', 'statistics', 'python', 'pandas', 'numpy', 'excel'},
+            'product_management': {'product strategy', 'agile', 'user stories', 'competitive analysis', 'wireframing', 
+                                 'stakeholder management', 'roadmap', 'user research'},
+            'soft_skills': {'leadership', 'communication', 'teamwork', 'problem solving', 'analytical thinking', 
+                           'creativity', 'adaptability', 'time management', 'project management', 'presentation'}
+        }
+        
+        # Calculate category bonuses
+        category_bonuses = 0.0
+        for category, skills in skill_categories.items():
+            category_matches = candidate_set.intersection(skills)
+            if category_matches:
+                # Technical skills are highly valuable for PM roles
+                if category == 'technical':
+                    category_bonuses += min(len(category_matches) * 0.15, 0.4)  # Up to 40% bonus
+                elif category == 'data_analysis':
+                    category_bonuses += min(len(category_matches) * 0.12, 0.3)  # Up to 30% bonus
+                elif category == 'product_management':
+                    category_bonuses += min(len(category_matches) * 0.2, 0.5)   # Up to 50% bonus
+                elif category == 'soft_skills':
+                    category_bonuses += min(len(category_matches) * 0.1, 0.3)   # Up to 30% bonus
+        
+        # Check for soft skills in candidate
+        candidate_soft_skills = candidate_set.intersection(skill_categories['soft_skills'])
+        soft_skills_bonus = min(len(candidate_soft_skills) * 0.1, 0.3)  # Up to 30% bonus
+        
+        # IMPROVEMENT: Higher minimum score for users with extensive skills
+        if len(candidate_set) > 5:  # Users with many skills
+            min_score = 0.25  # 25% minimum score
+        elif len(candidate_set) > 0:
+            min_score = 0.15  # 15% minimum score
+        else:
+            min_score = 0.0
+        
+        base_score = max(base_score, min_score)
+        
+        # Apply all bonuses
+        base_score = min(base_score + category_bonuses + soft_skills_bonus, 1.0)
         
         # TF-IDF similarity for semantic matching
         try:
@@ -220,17 +269,30 @@ class RecommendationEngine:
         if not candidate_education:
             return False, 0.0
         
-        candidate_level = self.education_hierarchy.get(
-            candidate_education.lower().strip(), 0
-        )
+        # IMPROVEMENT: Handle compound education levels like "Diploma/Certificate"
+        candidate_education_clean = candidate_education.lower().strip()
         required_level = self.education_hierarchy.get(
             min_education.lower().strip(), 0
         )
+        
+        # Check for multiple education levels in candidate (e.g., "Diploma/Certificate")
+        candidate_levels = []
+        for edu_part in candidate_education_clean.split('/'):
+            level = self.education_hierarchy.get(edu_part.strip(), 0)
+            if level > 0:
+                candidate_levels.append(level)
+        
+        # Use the highest education level found
+        candidate_level = max(candidate_levels) if candidate_levels else 0
         
         if candidate_level >= required_level:
             # Higher education gets bonus score
             bonus = min((candidate_level - required_level) * 0.1, 0.3)
             return True, min(1.0, 0.7 + bonus)
+        
+        # IMPROVEMENT: More lenient for internships - allow candidates with slightly lower education
+        if candidate_level >= required_level - 1:
+            return True, 0.5  # Give partial credit for close education levels
         
         return False, 0.0
     
@@ -251,6 +313,40 @@ class RecommendationEngine:
         
         return False, 0.0
     
+    def calculate_potential_bonus(self, candidate: Dict, internship: Dict) -> float:
+        """Calculate potential bonus based on candidate enthusiasm and learning ability"""
+        bonus = 0.0
+        candidate_skills = self.extract_skill_set(candidate.get('skills', ''))
+        
+        # Check for learning-oriented skills
+        learning_skills = {'learning', 'adaptability', 'curiosity', 'growth mindset', 'eagerness to learn'}
+        if candidate_skills.intersection(learning_skills):
+            bonus += 0.3
+        
+        # Check for communication and leadership (valuable for PM roles)
+        leadership_skills = {'leadership', 'communication', 'teamwork', 'presentation', 'stakeholder management'}
+        if candidate_skills.intersection(leadership_skills):
+            bonus += 0.4
+        
+        # Check for analytical thinking
+        analytical_skills = {'analytical thinking', 'problem solving', 'critical thinking', 'data analysis'}
+        if candidate_skills.intersection(analytical_skills):
+            bonus += 0.3
+        
+        # IMPROVEMENT: Technical skills are highly valuable for PM roles
+        technical_skills = {'python', 'java', 'javascript', 'sql', 'machine learning', 'ai', 'data analysis'}
+        technical_matches = candidate_skills.intersection(technical_skills)
+        if technical_matches:
+            bonus += min(len(technical_matches) * 0.1, 0.4)  # Up to 40% bonus for technical skills
+        
+        # IMPROVEMENT: Full-stack development skills are excellent for PM
+        fullstack_skills = {'html', 'css', 'javascript', 'react', 'node.js', 'express', 'mongodb', 'postgresql'}
+        fullstack_matches = candidate_skills.intersection(fullstack_skills)
+        if fullstack_matches:
+            bonus += min(len(fullstack_matches) * 0.08, 0.3)  # Up to 30% bonus for full-stack skills
+        
+        return min(bonus, 1.0)  # Cap at 100%
+    
     def calculate_hybrid_score(self, candidate: Dict, 
                              internship: Dict) -> Tuple[float, str, List[str]]:
         """Calculate hybrid recommendation score combining multiple factors"""
@@ -258,48 +354,65 @@ class RecommendationEngine:
         explanations = []
         matched_skills = []
         
-        # 1. Skill matching (40% weight)
+        # 1. Skill matching (45% weight) - increased back to 45% for better skill recognition
         skill_score, matched = self.calculate_skill_match_score(
             candidate.get('skills', ''),
             internship.get('required_skills', ''),
             internship.get('preferred_skills', '')
         )
-        score_components.append(('skills', skill_score * 0.4))
+        score_components.append(('skills', skill_score * 0.45))
         matched_skills = matched
         
-        # 2. Location matching (25% weight)
+        # 2. Location matching (20% weight) - reduced from 25%
         loc_match, loc_score = self.check_location_match(
             candidate.get('location'),
             internship.get('location')
         )
-        score_components.append(('location', loc_score * 0.25))
+        score_components.append(('location', loc_score * 0.2))
         
-        # 3. Education eligibility (20% weight)
+        # 3. Education eligibility (15% weight) - reduced from 20%
         edu_eligible, edu_score = self.check_education_eligibility(
             candidate.get('education'),
             internship.get('min_education')
         )
-        score_components.append(('education', edu_score * 0.2))
+        score_components.append(('education', edu_score * 0.15))
         
-        # 4. Experience matching (15% weight)
+        # 4. Experience matching (10% weight) - reduced from 15%
         exp_eligible, exp_score = self.check_experience_eligibility(
             candidate.get('experience_years', 0),
             internship.get('experience_required', 0)
         )
-        score_components.append(('experience', exp_score * 0.15))
+        score_components.append(('experience', exp_score * 0.1))
+        
+        # 5. NEW: Potential and enthusiasm bonus (10% weight) - increased from 5%
+        potential_bonus = self.calculate_potential_bonus(candidate, internship)
+        score_components.append(('potential', potential_bonus * 0.1))
         
         # Calculate total score
         total_score = sum(score for _, score in score_components)
         
-        # Disqualify if doesn't meet hard requirements
-        if not edu_eligible or not exp_eligible:
-            total_score *= 0.3  # Heavily penalize but don't completely exclude
+        # IMPROVEMENT: More lenient disqualification - only penalize if both fail
+        if not edu_eligible and not exp_eligible:
+            total_score *= 0.3  # Only penalize if both education and experience fail
+        elif not edu_eligible or not exp_eligible:
+            total_score *= 0.7  # Less harsh penalty for single failure
+        
+        # IMPROVEMENT: Minimum score floor for all candidates
+        if total_score < 0.1:  # If score is very low
+            total_score = 0.1  # Set minimum 10% score
         
         # Generate explanation
         explanation_parts = []
         
         if matched_skills:
             explanation_parts.append(f"Skills match: {', '.join(matched_skills[:3])}")
+        else:
+            # IMPROVEMENT: More encouraging message for users with limited skills
+            candidate_skills = self.extract_skill_set(candidate.get('skills', ''))
+            if candidate_skills:
+                explanation_parts.append(f"Your skills: {', '.join(list(candidate_skills)[:3])}")
+            else:
+                explanation_parts.append("Fresh perspective welcome!")
         
         if loc_match and candidate.get('location'):
             if 'remote' in internship.get('location', '').lower():
@@ -312,8 +425,14 @@ class RecommendationEngine:
         
         if exp_eligible and candidate.get('experience_years', 0) > 0:
             explanation_parts.append(f"Experience: {candidate.get('experience_years')} years")
+        elif candidate.get('experience_years', 0) == 0:
+            explanation_parts.append("Perfect for entry-level role")
         
-        explanation = " | ".join(explanation_parts) if explanation_parts else "General match"
+        # IMPROVEMENT: Add encouraging message for low scores
+        if total_score < 0.3:
+            explanation_parts.append("Great learning opportunity!")
+        
+        explanation = " | ".join(explanation_parts) if explanation_parts else "Good potential match"
         
         return total_score, explanation, matched_skills
     
